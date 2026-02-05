@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
@@ -55,18 +56,23 @@ import vPerez.ProgramacionNCapasNov2025.ML.Usuario;
 @RequestMapping("Usuario")
 public class UsuarioController {
 
+    
 //    @Autowired
 //private ModelMapper modelMapper;
     public static final String url = "http://localhost:8081/api";
 
+
     @GetMapping
-    public String getAll(Model model) {
+    public String getAll(Model model, HttpSession sesion) {
 
         //para consumir el servicio
         RestTemplate restTemplate = new RestTemplate();
-
+        
         //restTemplate devuelve un response entity(lo que viene del servidor)
         try {
+            HttpHeaders header = new HttpHeaders();
+            
+            header.setBearerAuth((String) sesion.getAttribute("token"));
             ResponseEntity<Result<List<Usuario>>> responseEntity = restTemplate.exchange(
                     url + "/usuarios",
                     HttpMethod.GET,
