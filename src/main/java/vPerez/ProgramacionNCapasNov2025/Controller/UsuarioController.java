@@ -2,6 +2,7 @@ package vPerez.ProgramacionNCapasNov2025.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.io.BufferedReader;
@@ -63,8 +64,9 @@ public class UsuarioController {
 
 
     @GetMapping
-    public String getAll(Model model, HttpSession sesion) {
-
+    public String getAll(Model model, HttpSession sesion, HttpSession session) {
+System.out.println(session.getAttribute("token"));
+//System.out.println(reque);
         //para consumir el servicio
         RestTemplate restTemplate = new RestTemplate();
         
@@ -73,15 +75,19 @@ public class UsuarioController {
             HttpHeaders header = new HttpHeaders();
             
             header.setBearerAuth((String) sesion.getAttribute("token"));
+            HttpEntity<Result> requestEntity = new HttpEntity<>(header);
             ResponseEntity<Result<List<Usuario>>> responseEntity = restTemplate.exchange(
                     url + "/usuarios",
                     HttpMethod.GET,
-                    HttpEntity.EMPTY,
+                        requestEntity,
+//                    requestEntity,
                     new ParameterizedTypeReference<Result<List<Usuario>>>() {
             });
             Result resultUsuario = responseEntity.getBody();
 
-            ResponseEntity<Result<List<Rol>>> response = restTemplate.exchange(url + "/rol", HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Rol>>>() {
+//            header.setBearerAuth((String) sesion.getAttribute("token"));
+//            HttpEntity<Result> requestEntity1 = new HttpEntity<>(header);
+            ResponseEntity<Result<List<Rol>>> response = restTemplate.exchange(url + "/rol", HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Rol>>>() {
             });
             Result resultRol = response.getBody();
             model.addAttribute("Usuarios", resultUsuario.Object);
@@ -479,12 +485,13 @@ public class UsuarioController {
     }
 
     @PostMapping("/Search")
-    public String buscarUsuarios(@ModelAttribute("Usuario") Usuario usuario, Model model) {
+    public String buscarUsuarios(@ModelAttribute("Usuario") Usuario usuario, Model model,HttpSession session) {
 
+        
         model.addAttribute("UsuarioBusqueda", new Usuario());//creando usuario(vacio) para que pueda mandarse la busqueda
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
+        headers.setBearerAuth((String)session.getAttribute("token"));
         HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario, headers);
         RestTemplate restTemplate = new RestTemplate();
         try {

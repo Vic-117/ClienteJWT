@@ -5,6 +5,7 @@
 package vPerez.ProgramacionNCapasNov2025.Controller;
 
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -28,18 +29,26 @@ import vPerez.ProgramacionNCapasNov2025.ML.Usuario;
 @RequestMapping("login")
 public class LoginController {
     
+     @Autowired
+    private RestTemplate restTemplate;
+     
     @GetMapping
     public String cargar(Model model){
         model.addAttribute("Usuario", new Usuario());
         return "Login";
     }
+    
 
     @PostMapping
     public String login(@ModelAttribute("Usuario") Usuario usuario, HttpSession sesion, Model model) {
         try {
-            RestTemplate resTemplate = new RestTemplate();
-            HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario);
-            ResponseEntity<Result> response = resTemplate.exchange("http://localhost:8081/login", HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Result>() {
+//            RestTemplate resTemplate = new RestTemplate();
+//            HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario);
+            ResponseEntity<Result> response = restTemplate.exchange(
+                    "http://localhost:8081/login", 
+                    HttpMethod.POST, 
+                    new HttpEntity<>(usuario),
+                    new ParameterizedTypeReference<Result>() {
             });
             sesion.setAttribute("token", response.getBody().Object);
             return "redirect:/Usuario";
