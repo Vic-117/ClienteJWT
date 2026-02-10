@@ -51,6 +51,7 @@ public class LoginController {
                     new ParameterizedTypeReference<Result>() {
             });
             sesion.setAttribute("token", response.getBody().Object);
+            sesion.setAttribute("UsuarioAutenticado", response.getBody().Objects.get(0));
             return "redirect:/Usuario";
         }catch(Exception ex){
             return "Login";

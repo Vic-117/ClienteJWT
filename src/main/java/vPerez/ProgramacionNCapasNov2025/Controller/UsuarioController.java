@@ -57,74 +57,83 @@ import vPerez.ProgramacionNCapasNov2025.ML.Usuario;
 @RequestMapping("Usuario")
 public class UsuarioController {
 
-    
 //    @Autowired
 //private ModelMapper modelMapper;
     public static final String url = "http://localhost:8081/api";
 
-
     @GetMapping
-    public String getAll(Model model, HttpSession sesion, HttpSession session) {
-System.out.println(session.getAttribute("token"));
-//System.out.println(reque);
-        //para consumir el servicio
-        RestTemplate restTemplate = new RestTemplate();
-        
-        //restTemplate devuelve un response entity(lo que viene del servidor)
-        try {
-            HttpHeaders header = new HttpHeaders();
-            
-            header.setBearerAuth((String) sesion.getAttribute("token"));
-            HttpEntity<Result> requestEntity = new HttpEntity<>(header);
-            ResponseEntity<Result<List<Usuario>>> responseEntity = restTemplate.exchange(
-                    url + "/usuarios",
-                    HttpMethod.GET,
+    public String getAll(Model model, HttpSession sesion) {
+        if (sesion.getAttribute("token") != null) {
+
+            //para consumir el servicio
+            RestTemplate restTemplate = new RestTemplate();
+            model.addAttribute("token", "Bearer " + (String) sesion.getAttribute("token"));
+            //restTemplate devuelve un response entity(lo que viene del servidor)
+            try {
+                HttpHeaders header = new HttpHeaders();
+
+                header.setBearerAuth((String) sesion.getAttribute("token"));
+                HttpEntity<Result> requestEntity = new HttpEntity<>(header);
+                ResponseEntity<Result<List<Usuario>>> responseEntity = restTemplate.exchange(
+                        url + "/usuarios",
+                        HttpMethod.GET,
                         requestEntity,
-//                    requestEntity,
-                    new ParameterizedTypeReference<Result<List<Usuario>>>() {
-            });
-            Result resultUsuario = responseEntity.getBody();
+                        //                    requestEntity,
+                        new ParameterizedTypeReference<Result<List<Usuario>>>() {
+                });
+                Result resultUsuario = responseEntity.getBody();
 
 //            header.setBearerAuth((String) sesion.getAttribute("token"));
 //            HttpEntity<Result> requestEntity1 = new HttpEntity<>(header);
-            ResponseEntity<Result<List<Rol>>> response = restTemplate.exchange(url + "/rol", HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Rol>>>() {
-            });
-            Result resultRol = response.getBody();
-            model.addAttribute("Usuarios", resultUsuario.Object);
-            model.addAttribute("UsuarioBusqueda", new Usuario());
-            model.addAttribute("Roles", resultRol.Object);
+                ResponseEntity<Result<List<Rol>>> response = restTemplate.exchange(url + "/rol", HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Rol>>>() {
+                });
+                Result resultRol = response.getBody();
+                model.addAttribute("Usuarios", resultUsuario.Object);
+                model.addAttribute("UsuarioBusqueda", new Usuario());
+                model.addAttribute("Roles", resultRol.Object);
+                
+                model.addAttribute("UsuarioAutenticado", sesion.getAttribute("UsuarioAutenticado"));
 
-        } catch (Exception ex) {
-            System.out.println(ex.getCause());
+            } catch (Exception ex) {
+                System.out.println(ex.getCause());
+            }
+
+            return "Index";
+        } else {
+            return "redirect:/login";
         }
-
-        return "Index";
     }
 
     @GetMapping("UsuarioDireccionForm")
-    public String showAlumnoDireccion(Model model, RedirectAttributes redirectAttributes) {
+    public String showAlumnoDireccion(Model model, RedirectAttributes redirectAttributes, HttpSession sesion) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) sesion.getAttribute("token"));
+        model.addAttribute("token", header.getFirst("Authorization"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
+
         RestTemplate restTemplate = new RestTemplate();
         //REALIZAR PETICIÓN
-        ResponseEntity<Result<List<Pais>>> responseEntity = restTemplate.exchange(url + "/pais",
-                HttpMethod.GET,
-                HttpEntity.EMPTY,
-                new ParameterizedTypeReference<Result<List<Pais>>>() {
-        });
-        //OBTENER EL CUERPO DE LA RESPUESTA
-        Result resultPais = responseEntity.getBody();
-        //MAndar al usuario el elemento necesario que obtuvimos de la respuesta
-        model.addAttribute("Paises", resultPais.Object);
+        try {
+            ResponseEntity<Result<List<Pais>>> responseEntity = restTemplate.exchange(url + "/pais",
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<Result<List<Pais>>>() {
+            });
+            //OBTENER EL CUERPO DE LA RESPUESTA
+            Result resultPais = responseEntity.getBody();
+            //MAndar al usuario el elemento necesario que obtuvimos de la respuesta
+            model.addAttribute("Paises", resultPais.Object);
 
-        ResponseEntity<Result<List<Rol>>> responseEntityRol = restTemplate.exchange(url + "/rol", HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Rol>>>() {
-        });
-        Result result = responseEntityRol.getBody();
-////        Result resultPais = paisDaoImplementation.getAll();
-//        Result result = rolJpaDAOImplementation.getAll();
-//        Result resultPais = paisJpaDAOImplementation.getAll();
-        model.addAttribute("Roles", result.Object);
-        //MANDAR RESPUESTA A LA VISTA
+            ResponseEntity<Result<List<Rol>>> responseEntityRol = restTemplate.exchange(url + "/rol", HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Rol>>>() {
+            });
+            Result result = responseEntityRol.getBody();
+            model.addAttribute("Roles", result.Object);
+            //MANDAR RESPUESTA A LA VISTA
 
-        model.addAttribute("Usuario", new Usuario());
+            model.addAttribute("Usuario", new Usuario());
+        } catch (Exception ex) {
+            ex.getCause();
+        }
         return "UsuarioDireccionForm";
     }
 
@@ -132,7 +141,9 @@ System.out.println(session.getAttribute("token"));
     public String addUsuarioDireccion(@Valid @ModelAttribute("Usuario") Usuario usuario,
             BindingResult bindingResult, //debe de ir justo despues del objeto a validar
             @ModelAttribute("imagenInput") MultipartFile imagenInput,
-            Model model, RedirectAttributes redirectAttributes) {
+            Model model, RedirectAttributes redirectAttributes, HttpSession sesion) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) sesion.getAttribute("token"));
         try {
             if (imagenInput != null) {
                 long tamañoImagen = imagenInput.getSize();
@@ -147,10 +158,12 @@ System.out.println(session.getAttribute("token"));
             ex.getCause();
             System.out.println(ex.getLocalizedMessage());
         }
+
+        HttpEntity<Result> requestEntityJWT = new HttpEntity<>(header);
         RestTemplate restTemplateRol = new RestTemplate();
         ResponseEntity<Result<List<Rol>>> responseRol = restTemplateRol.exchange(url + "/rol",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                requestEntityJWT,
                 new ParameterizedTypeReference<Result<List<Rol>>>() {
         });
 
@@ -167,7 +180,7 @@ System.out.println(session.getAttribute("token"));
                 return "UsuarioDireccionForm";
             } else {
                 RestTemplate restTemplate = new RestTemplate();
-                HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario);
+                HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario, header);
 
                 ResponseEntity<Boolean> response = restTemplate.exchange(url + "/usuarios", HttpMethod.POST, requestEntity, new ParameterizedTypeReference<Boolean>() {
                 });
@@ -188,7 +201,7 @@ System.out.println(session.getAttribute("token"));
                 return "redirect:/Usuario/detail/" + usuario.getIdUsuario();
             } else {
                 RestTemplate restTemplate = new RestTemplate();
-                HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario);
+                HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario, header);
                 ResponseEntity<Result> response = restTemplate.exchange(url + "/usuarios/" + usuario.getIdUsuario(),
                         HttpMethod.PUT,
                         requestEntity,
@@ -216,7 +229,7 @@ System.out.println(session.getAttribute("token"));
             } else {
                 RestTemplate restTemplate = new RestTemplate();
 
-                HttpEntity<Direccion> httpEntity = new HttpEntity<>(usuario.direcciones.get(0));
+                HttpEntity<Direccion> httpEntity = new HttpEntity<>(usuario.direcciones.get(0), header);
 
                 ResponseEntity<Result> response = restTemplate.exchange(url + "/direccion/" + usuario.direcciones.get(0).getIdDireccion(),
                         HttpMethod.PUT,
@@ -243,7 +256,7 @@ System.out.println(session.getAttribute("token"));
 
             } else {
                 RestTemplate restTemplate = new RestTemplate();
-                HttpEntity<Direccion> requestEntity = new HttpEntity<>(usuario.direcciones.get(0));
+                HttpEntity<Direccion> requestEntity = new HttpEntity<>(usuario.direcciones.get(0), header);
 
                 ResponseEntity<Result> response = restTemplate.exchange(url + "/direccion/agregar/" + usuario.getIdUsuario(),
                         HttpMethod.POST,
@@ -256,11 +269,14 @@ System.out.println(session.getAttribute("token"));
     }
 
     @GetMapping("delete/{idUsuario}")
-    public String delete(@PathVariable("idUsuario") int idUsuario, RedirectAttributes redirectAttributes) {
+    public String delete(@PathVariable("idUsuario") int idUsuario, RedirectAttributes redirectAttributes, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
 //           ResponseEntity
-        ResponseEntity<Result<List<Usuario>>> response = restTemplate.exchange(url + "/usuarios/" + idUsuario, HttpMethod.DELETE, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Usuario>>>() {
+        ResponseEntity<Result<List<Usuario>>> response = restTemplate.exchange(url + "/usuarios/" + idUsuario, HttpMethod.DELETE, requestEntity, new ParameterizedTypeReference<Result<List<Usuario>>>() {
         });
         Result resultDelete = response.getBody();
 
@@ -274,28 +290,18 @@ System.out.println(session.getAttribute("token"));
 
     }
 
-//    @GetMapping("softDelete/{idUsuario}/{estatus}")
-//    @ResponseBody
-//    public Result softDelete(@PathVariable("idUsuario") int idUsuario, @PathVariable("estatus") int estatus, RedirectAttributes redirectAttributes) {
-//        Usuario usuario = new Usuario();
-//        usuario.setIdUsuario(idUsuario);
-//        usuario.setEstatus(estatus);
-//        
-//        RestTemplate restTemplate = new RestTemplate();
-//        
-//        ResponseEntity<Result<Usuario>> responseEntity = restTemplate.exchange(url+"usuarios", HttpMethod.PATCH, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<Usuario>>() {
-//        });
-//        Result result = responseEntity.getBody();
-//       
-//
-//        return result;
-//    }
-//
+
     @GetMapping("direccion/delete/{idDireccion}/{idUsuario}")
-    public String deleteDireccion(@PathVariable("idDireccion") int idDireccion, @PathVariable("idUsuario") String idUsuario, RedirectAttributes redirectAttributes) {
+    public String deleteDireccion(@PathVariable("idDireccion") int idDireccion, @PathVariable("idUsuario") String idUsuario, RedirectAttributes redirectAttributes, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String)session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<>(header);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Result<List<Direccion>>> response = restTemplate.exchange(url + "/direccion/" + idDireccion, HttpMethod.DELETE, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Direccion>>>() {
+        ResponseEntity<Result<List<Direccion>>> response = restTemplate.exchange(url + "/direccion/" + idDireccion, 
+                HttpMethod.DELETE, 
+                requestEntity,
+                new ParameterizedTypeReference<Result<List<Direccion>>>() {
         });
 
         Result result = response.getBody();
@@ -311,29 +317,33 @@ System.out.println(session.getAttribute("token"));
     }
 
     @GetMapping("detail/{idUsuario}")
-    public String getUsuario(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes) {
-
+    public String getUsuario(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
         if (model.getAttribute("Errores") != null) {
             Usuario user = (Usuario) model.getAttribute("Usuario");
             user.direcciones = new ArrayList<>();
 //            user.direcciones.add(new Direccion());
             model.addAttribute("Usuario", user);
-        
-        }else {
-            ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/" + idUsuario,
+
+        } else {
+            ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/detalle/" + idUsuario,
                     HttpMethod.GET,
-                    HttpEntity.EMPTY,
+                    requestEntity,
                     new ParameterizedTypeReference<Result<Usuario>>() {
             });
 
             Result resultUsuario = response.getBody();
             model.addAttribute("Usuario", resultUsuario.Object);
+            
+            model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
         }
 
         ResponseEntity<Result<List<Rol>>> responseRol = restTemplate.exchange(url + "/rol",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                requestEntity,
                 new ParameterizedTypeReference<Result<List<Rol>>>() {
         });
 
@@ -341,7 +351,7 @@ System.out.println(session.getAttribute("token"));
 
         ResponseEntity<Result<List<Pais>>> reponsePais = restTemplate.exchange(url + "/pais",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                requestEntity,
                 new ParameterizedTypeReference<Result<List<Pais>>>() {
         });
         Result resultPais = reponsePais.getBody();
@@ -354,13 +364,15 @@ System.out.println(session.getAttribute("token"));
 
     @GetMapping("direccionForm/{idUsuario}")
     @ResponseBody
-    public Result getDireccion(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes) {
-
+    public Result getDireccion(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes,HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String)session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
         ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/" + idUsuario,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                requestEntity,
                 new ParameterizedTypeReference<Result<Usuario>>() {
         });
         Result result = response.getBody();
@@ -372,10 +384,16 @@ System.out.println(session.getAttribute("token"));
 
     @GetMapping("getEstadoByPais/{idPais}")
     @ResponseBody
-    public Result getEstadoByPais(@PathVariable int idPais) {
+    public Result getEstadoByPais(@PathVariable int idPais, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<>(header);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Result<List<Estado>>> responseEntity = restTemplate.exchange(url + "/estado/pais/" + idPais, HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Estado>>>() {
+        ResponseEntity<Result<List<Estado>>> responseEntity = restTemplate.exchange(url + "/estado/pais/" + idPais,
+                HttpMethod.GET,
+                requestEntity,
+                new ParameterizedTypeReference<Result<List<Estado>>>() {
         });
 
         Result result = responseEntity.getBody();
@@ -385,10 +403,13 @@ System.out.println(session.getAttribute("token"));
 
     @GetMapping("getMunicipioByEstado/{idEstado}")
     @ResponseBody
-    public Result getMunicipioByEstado(@PathVariable("idEstado") int idEstado) {
+    public Result getMunicipioByEstado(@PathVariable("idEstado") int idEstado, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Result<List<Municipio>>> response = restTemplate.exchange(url + "/municipio/estado/" + idEstado, HttpMethod.GET, HttpEntity.EMPTY, new ParameterizedTypeReference<Result<List<Municipio>>>() {
+        ResponseEntity<Result<List<Municipio>>> response = restTemplate.exchange(url + "/municipio/estado/" + idEstado, HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Municipio>>>() {
         });
 
         Result result = response.getBody();
@@ -399,12 +420,15 @@ System.out.println(session.getAttribute("token"));
 
     @GetMapping("getColoniaByMunicipio/{idMunicipio}")
     @ResponseBody
-    public Result getColoniaByMunicipio(@PathVariable("idMunicipio") int idMunicipio) {
+    public Result getColoniaByMunicipio(@PathVariable("idMunicipio") int idMunicipio, HttpSession session) {
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String) session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
         ResponseEntity<Result<List<Colonia>>> response = restTemplate.exchange(url + "/colonia/municipio/" + idMunicipio,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                requestEntity,
                 new ParameterizedTypeReference<Result<List<Colonia>>>() {
         });
 
@@ -485,13 +509,15 @@ System.out.println(session.getAttribute("token"));
     }
 
     @PostMapping("/Search")
-    public String buscarUsuarios(@ModelAttribute("Usuario") Usuario usuario, Model model,HttpSession session) {
-
-        
+    public String buscarUsuarios(@ModelAttribute("Usuario") Usuario usuario, Model model, HttpSession session) {
+//        HttpHeaders header = new HttpHeaders();
+//        header.setBearerAuth((String)session.getAttribute("token"));
+//        HttpEntity<String> requestEntity = new HttpEntity<>(header);
         model.addAttribute("UsuarioBusqueda", new Usuario());//creando usuario(vacio) para que pueda mandarse la busqueda
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth((String)session.getAttribute("token"));
+        headers.setBearerAuth((String) session.getAttribute("token"));
+
         HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario, headers);
         RestTemplate restTemplate = new RestTemplate();
         try {
@@ -504,6 +530,8 @@ System.out.println(session.getAttribute("token"));
             Result result = response.getBody();
             model.addAttribute("Usuarios", result.Objects);
             model.addAttribute("usuariosEstatus", result.Objects);//recargar el usuario
+            
+            model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
         } catch (Exception ex) {
             System.out.println(ex);
         }
@@ -536,6 +564,16 @@ System.out.println(session.getAttribute("token"));
         Result result = response.getBody();
 
         return "redirect:/Usuario/detail/" + usuario.getIdUsuario();
+    }
+    
+    @GetMapping("/logout")//Dudas
+    public String salir(HttpSession session){
+        
+        if(session != null && session.getAttribute("token")!= null){
+            session.invalidate();
+        }
+        return "Logout";
+        
     }
 
 }

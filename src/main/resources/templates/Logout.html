@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this template
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+        <style>
+            .spinner-lento{
+                color: #000033;
+                animation-duration: 1.5s;
+            }
+        </style>
+    </head>
+    <body class="container" style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem">
+        <!--<i class="bi bi-exclamation " style="color: white; font-size: 13vw"></i>-->
+
+        <i class="bi bi-door-open" style="font-size: 15vw"></i>
+
+
+        <!--<button class="btn btn-outline-success" type="button" disabled>-->
+            <h2 role="status">Saliendo</h2>
+            <span class="spinner-border spinner-lento" aria-hidden="true" style="width: 3vw; height: 3vw;"></span>
+        <!--</button>-->
+
+
+    </body>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script>
+
+
+            $(document).ready(function () {
+                setTimeout(() => {
+                    window.location.replace ("/login");
+
+                }, 5000);
+
+            });
+
+
+    </script>
+</html>
