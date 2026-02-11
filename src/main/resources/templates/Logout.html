@@ -26,8 +26,8 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
 
 
         <!--<button class="btn btn-outline-success" type="button" disabled>-->
-            <h2 role="status">Saliendo</h2>
-            <span class="spinner-border spinner-lento" aria-hidden="true" style="width: 3vw; height: 3vw;"></span>
+        <h2 role="status">Saliendo</h2>
+        <span class="spinner-border spinner-lento" aria-hidden="true" style="width: 3vw; height: 3vw;"></span>
         <!--</button>-->
 
 
@@ -36,13 +36,15 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
     <script>
 
 
-            $(document).ready(function () {
-                setTimeout(() => {
+        $(document).ready(function () {
+            setTimeout(() => {
+              
                     window.location.replace ("/login");
+//                    history.replaceState(null,null,"/login");
 
-                }, 5000);
+            }, 5000);
 
-            });
+        });
 
 
     </script>

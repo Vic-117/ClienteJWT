@@ -4,6 +4,7 @@
  */
 package vPerez.ProgramacionNCapasNov2025.Controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -44,18 +45,31 @@ public class LoginController {
         try {
 //            RestTemplate resTemplate = new RestTemplate();
 //            HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario);
+//            if(){
+//            
+//            }
             ResponseEntity<Result> response = restTemplate.exchange(
                     "http://localhost:8081/login", 
                     HttpMethod.POST, 
                     new HttpEntity<>(usuario),
                     new ParameterizedTypeReference<Result>() {
             });
-            sesion.setAttribute("token", response.getBody().Object);
-            sesion.setAttribute("UsuarioAutenticado", response.getBody().Objects.get(0));
-            return "redirect:/Usuario";
+            Result result = response.getBody();
+            
+            ObjectMapper mapper = new ObjectMapper();//Para convertir el hasMap en un Usuario
+            Usuario usuarioRespuesta = mapper.convertValue(result.Objects.get(0), Usuario.class);//Metodo para conversión
+            sesion.setAttribute("token", result.Object);
+            sesion.setAttribute("UsuarioAutenticado", usuarioRespuesta);
+            if(usuarioRespuesta.rol.getNombre().equals("Administrador")){
+                return "redirect:/Usuario";
+            
+            }else if(usuarioRespuesta.rol.getNombre().equals("Usuario")){
+                return "redirect:/Usuario/detail/"+usuarioRespuesta.getIdUsuario();
+            }
         }catch(Exception ex){
             return "Login";
         }
+            return "Login";
 
     }
 

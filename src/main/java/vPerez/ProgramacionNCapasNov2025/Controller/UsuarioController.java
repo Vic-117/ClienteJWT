@@ -1,8 +1,10 @@
 package vPerez.ProgramacionNCapasNov2025.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.io.BufferedReader;
@@ -62,8 +64,15 @@ public class UsuarioController {
     public static final String url = "http://localhost:8081/api";
 
     @GetMapping
-    public String getAll(Model model, HttpSession sesion) {
+    public String getAll(Model model, HttpSession sesion, HttpServletResponse httpResponse) {
         if (sesion.getAttribute("token") != null) {
+            Usuario userAuth =(Usuario) sesion.getAttribute("UsuarioAutenticado");
+            if(userAuth !=null && userAuth.rol.getNombre().equals( "Usuario")){
+                return "redirect:/Usuario/detail/"+userAuth.getIdUsuario();
+            }
+            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            httpResponse.setHeader("Pragma", "no-cache");
+            httpResponse.setHeader("Expires", "0");
 
             //para consumir el servicio
             RestTemplate restTemplate = new RestTemplate();
@@ -91,7 +100,7 @@ public class UsuarioController {
                 model.addAttribute("Usuarios", resultUsuario.Object);
                 model.addAttribute("UsuarioBusqueda", new Usuario());
                 model.addAttribute("Roles", resultRol.Object);
-                
+
                 model.addAttribute("UsuarioAutenticado", sesion.getAttribute("UsuarioAutenticado"));
 
             } catch (Exception ex) {
@@ -142,6 +151,7 @@ public class UsuarioController {
             BindingResult bindingResult, //debe de ir justo despues del objeto a validar
             @ModelAttribute("imagenInput") MultipartFile imagenInput,
             Model model, RedirectAttributes redirectAttributes, HttpSession sesion) {
+
         HttpHeaders header = new HttpHeaders();
         header.setBearerAuth((String) sesion.getAttribute("token"));
         try {
@@ -290,16 +300,15 @@ public class UsuarioController {
 
     }
 
-
     @GetMapping("direccion/delete/{idDireccion}/{idUsuario}")
     public String deleteDireccion(@PathVariable("idDireccion") int idDireccion, @PathVariable("idUsuario") String idUsuario, RedirectAttributes redirectAttributes, HttpSession session) {
         HttpHeaders header = new HttpHeaders();
-        header.setBearerAuth((String)session.getAttribute("token"));
+        header.setBearerAuth((String) session.getAttribute("token"));
         HttpEntity<String> requestEntity = new HttpEntity<>(header);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Result<List<Direccion>>> response = restTemplate.exchange(url + "/direccion/" + idDireccion, 
-                HttpMethod.DELETE, 
+        ResponseEntity<Result<List<Direccion>>> response = restTemplate.exchange(url + "/direccion/" + idDireccion,
+                HttpMethod.DELETE,
                 requestEntity,
                 new ParameterizedTypeReference<Result<List<Direccion>>>() {
         });
@@ -317,56 +326,68 @@ public class UsuarioController {
     }
 
     @GetMapping("detail/{idUsuario}")
-    public String getUsuario(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
-        HttpHeaders header = new HttpHeaders();
-        header.setBearerAuth((String) session.getAttribute("token"));
-        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
-        RestTemplate restTemplate = new RestTemplate();
-        if (model.getAttribute("Errores") != null) {
-            Usuario user = (Usuario) model.getAttribute("Usuario");
-            user.direcciones = new ArrayList<>();
-//            user.direcciones.add(new Direccion());
-            model.addAttribute("Usuario", user);
+    public String getUsuario(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes, HttpSession session, HttpServletResponse httpResponse) {
+        httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        httpResponse.setHeader("Pragma", "no-cache");
+        httpResponse.setHeader("Expires", "0");
 
-        } else {
-            ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/detalle/" + idUsuario,
+        try {
+            HttpHeaders header = new HttpHeaders();
+            header.setBearerAuth((String) session.getAttribute("token"));
+            HttpEntity<String> requestEntity = new HttpEntity<String>(header);
+            RestTemplate restTemplate = new RestTemplate();
+            if (model.getAttribute("Errores") != null) {
+                Usuario user = (Usuario) model.getAttribute("Usuario");
+                user.direcciones = new ArrayList<>();
+//            user.direcciones.add(new Direccion());
+                model.addAttribute("Usuario", user);
+
+            } else {
+                Usuario userAuth = (Usuario) session.getAttribute("UsuarioAutenticado");
+                if (userAuth != null && userAuth.getIdUsuario() != idUsuario && userAuth.rol.getNombre().equals("Usuario")) {
+                    return "redirect:/Usuario/detail/" + userAuth.getIdUsuario();
+                }
+                ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/detalle/" + idUsuario,
+                        HttpMethod.GET,
+                        requestEntity,
+                        new ParameterizedTypeReference<Result<Usuario>>() {
+                });
+
+                Result resultUsuario = response.getBody();
+                model.addAttribute("Usuario", resultUsuario.Object);
+
+                model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
+            }
+
+            ResponseEntity<Result<List<Rol>>> responseRol = restTemplate.exchange(url + "/rol",
                     HttpMethod.GET,
                     requestEntity,
-                    new ParameterizedTypeReference<Result<Usuario>>() {
+                    new ParameterizedTypeReference<Result<List<Rol>>>() {
             });
 
-            Result resultUsuario = response.getBody();
-            model.addAttribute("Usuario", resultUsuario.Object);
-            
-            model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
+            Result resultRol = responseRol.getBody();
+
+            ResponseEntity<Result<List<Pais>>> reponsePais = restTemplate.exchange(url + "/pais",
+                    HttpMethod.GET,
+                    requestEntity,
+                    new ParameterizedTypeReference<Result<List<Pais>>>() {
+            });
+            Result resultPais = reponsePais.getBody();
+
+            model.addAttribute("Paises", resultPais.Object);
+            model.addAttribute("Roles", resultRol.Object);//Agregado 12/12/2025
+        } catch (Exception ex) {
+            ex.getLocalizedMessage();
+            return "redirect:/login";
         }
-
-        ResponseEntity<Result<List<Rol>>> responseRol = restTemplate.exchange(url + "/rol",
-                HttpMethod.GET,
-                requestEntity,
-                new ParameterizedTypeReference<Result<List<Rol>>>() {
-        });
-
-        Result resultRol = responseRol.getBody();
-
-        ResponseEntity<Result<List<Pais>>> reponsePais = restTemplate.exchange(url + "/pais",
-                HttpMethod.GET,
-                requestEntity,
-                new ParameterizedTypeReference<Result<List<Pais>>>() {
-        });
-        Result resultPais = reponsePais.getBody();
-
-        model.addAttribute("Paises", resultPais.Object);
-        model.addAttribute("Roles", resultRol.Object);//Agregado 12/12/2025
-
         return "detalleUsuario";
     }
 
     @GetMapping("direccionForm/{idUsuario}")
     @ResponseBody
-    public Result getDireccion(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes,HttpSession session) {
+    public Result getDireccion(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes, HttpSession session) {
         HttpHeaders header = new HttpHeaders();
-        header.setBearerAuth((String)session.getAttribute("token"));
+        header.setBearerAuth((String) session.getAttribute("token"));
         HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
@@ -526,11 +547,18 @@ public class UsuarioController {
                     requestEntity,
                     new ParameterizedTypeReference<Result<Usuario>>() {
             });
+            
+            ResponseEntity<Result<List<Rol>>> responseRol = restTemplate.exchange(url + "/rol", HttpMethod.GET, requestEntity, new ParameterizedTypeReference<Result<List<Rol>>>() {
+                });
+                Result resultRol = responseRol.getBody();
+                model.addAttribute("Roles", resultRol.Object);
+                
+                
 
             Result result = response.getBody();
             model.addAttribute("Usuarios", result.Objects);
             model.addAttribute("usuariosEstatus", result.Objects);//recargar el usuario
-            
+
             model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
         } catch (Exception ex) {
             System.out.println(ex);
@@ -564,16 +592,6 @@ public class UsuarioController {
         Result result = response.getBody();
 
         return "redirect:/Usuario/detail/" + usuario.getIdUsuario();
-    }
-    
-    @GetMapping("/logout")//Dudas
-    public String salir(HttpSession session){
-        
-        if(session != null && session.getAttribute("token")!= null){
-            session.invalidate();
-        }
-        return "Logout";
-        
     }
 
 }
