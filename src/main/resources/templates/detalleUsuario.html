@@ -13,6 +13,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
 
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         <style>
 
             #usuario1{
@@ -87,12 +88,12 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
 
                 <div class=" d-flex align-items-center bg-primary" style="padding: 7px; border-radius: 10px; color: white">
                     <i class="bi bi-person-fill-gear fs-4 me-2"></i>
-                    <span th:text="${UsuarioAutenticado.rol.nombre}"></span>
+                    <span th:if="${UsuarioAutenticado}" th:text="${UsuarioAutenticado.rol.nombre}"></span>
                 </div>
 
 
 
-               
+
 
                 <a th:href="@{/logout}" class="btn btn-danger">
                     <i class="bi bi-box-arrow-right"></i>
@@ -310,13 +311,13 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
                                     <span class="input-group-text  col-3">Femenino:</span>
                                     <div class="input-group-text col-1" style="background-color:#A8BCD1">
                                         <!--INPUT SEXO F-->
-                                        <input type = "radio" value="F" id="femenino" name="sexo" class="form-check-input mt-0" th:field="*{sexo}"  th:checked="*{sexo}">
+                                        <input type = "radio" value="F " id="femenino" name="sexo" class="form-check-input mt-0" th:field="*{sexo}" >
                                     </div>
                                     <span class="input-group-text  col-3">Masculino:</span>
                                     <div class="input-group-text col-1" style="background:#A8BCD1 ">
                                         <!--INPUT SEXO M-->
 
-                                        <input type = "radio" value="M" id="masculino" name="sexo" class="form-check-input mt-0" th:field="*{sexo}" th:checked="*{sexo}" >
+                                        <input type = "radio" value="M " id="masculino" name="sexo" class="form-check-input mt-0" th:field="*{sexo}" >
                                     </div>
                                 </div>
                                 <span class="text-danger  row" style="font-size: 0.8rem" th:if="${Errores!= null} AND ${error.field == 'sexo'} " th:each="error:${Errores}"
@@ -527,8 +528,8 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
 
         <!--SCRIPTS-->
         <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-        <script></script>
         <script>
+
                                         function soloLetras(event, input) {
 
                                         let key = event.key;
@@ -778,6 +779,9 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
 
             url: "http://localhost:8081/api/estado/pais/" + $("#ddlPais").val(), //url de la peticion
                     method: "GET", //tipo de accion
+                    headers:{
+                    'Authorization':'Bearer ' + [[${token}]]
+                    },
                     dataType: 'json', // tipos de datos
                     //Cuando la peticion fue exitosa:
                     success: function (data, textStatus, jqXHR) {
@@ -798,7 +802,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
                     },
                     //Cuando hubo error en la petición 
                     error: function (jqXHR, textStatus, errorThrown) {
-                    alert(textStatus);
+                    alert(errorThrown);
                     }
 
 
@@ -825,6 +829,9 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
             $.ajax({
             url: "http://localhost:8081/api/municipio/estado/" + $("#ddlEstado").val(),
                     method: "GET", //tipo de accion
+                    headers:{
+                    'Authorization':'Bearer ' + [[${token}]]
+                    },
                     dataType: 'json', // tipos de datos
                     success: function (data, textStatus, jqXHR) {
 
@@ -856,6 +863,9 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Other/html.html to edit this temp
             $.ajax({
             url: "http://localhost:8081/api/colonia/municipio/" + $("#ddlMunicipio").val(),
                     method: "GET",
+                    headers:{
+                    'Authorization':'Bearer ' + [[${token}]]
+                    },
                     dataType: 'json',
                     success: function (data, textStatus, jqXHR) {
                     if (data.Correct) {

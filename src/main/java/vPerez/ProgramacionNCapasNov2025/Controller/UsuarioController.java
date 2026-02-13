@@ -70,9 +70,10 @@ public class UsuarioController {
             if(userAuth !=null && userAuth.rol.getNombre().equals( "Usuario")){
                 return "redirect:/Usuario/detail/"+userAuth.getIdUsuario();
             }
-            httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-            httpResponse.setHeader("Pragma", "no-cache");
-            httpResponse.setHeader("Expires", "0");
+            if(userAuth == null){
+                return "redirect:/login";
+            }
+
 
             //para consumir el servicio
             RestTemplate restTemplate = new RestTemplate();
@@ -154,6 +155,7 @@ public class UsuarioController {
 
         HttpHeaders header = new HttpHeaders();
         header.setBearerAuth((String) sesion.getAttribute("token"));
+        
         try {
             if (imagenInput != null) {
                 long tamañoImagen = imagenInput.getSize();
@@ -168,7 +170,7 @@ public class UsuarioController {
             ex.getCause();
             System.out.println(ex.getLocalizedMessage());
         }
-
+         model.addAttribute("UsuarioAutenticado", sesion.getAttribute("UsuarioAutenticado"));
         HttpEntity<Result> requestEntityJWT = new HttpEntity<>(header);
         RestTemplate restTemplateRol = new RestTemplate();
         ResponseEntity<Result<List<Rol>>> responseRol = restTemplateRol.exchange(url + "/rol",
@@ -189,6 +191,7 @@ public class UsuarioController {
 
                 return "UsuarioDireccionForm";
             } else {
+                
                 RestTemplate restTemplate = new RestTemplate();
                 HttpEntity<Usuario> requestEntity = new HttpEntity<>(usuario, header);
 
@@ -197,6 +200,7 @@ public class UsuarioController {
                 Result resultUsuario = new Result();
                 resultUsuario.Correct = response.getBody();
                 model.addAttribute("Usuario", usuario);
+//                 model.addAttribute("UsuarioAutenticado", sesion.getAttribute("UsuarioAutenticado"));
                 return "redirect:/Usuario";
             }
 
@@ -327,6 +331,8 @@ public class UsuarioController {
 
     @GetMapping("detail/{idUsuario}")
     public String getUsuario(@PathVariable("idUsuario") int idUsuario, Model model, RedirectAttributes redirectAttributes, HttpSession session, HttpServletResponse httpResponse) {
+       model.addAttribute("token", session.getAttribute("token"));
+      
         httpResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         httpResponse.setHeader("Pragma", "no-cache");
         httpResponse.setHeader("Expires", "0");
@@ -391,7 +397,7 @@ public class UsuarioController {
         HttpEntity<String> requestEntity = new HttpEntity<String>(header);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/" + idUsuario,
+        ResponseEntity<Result<Usuario>> response = restTemplate.exchange(url + "/usuarios/detalle/" + idUsuario,
                 HttpMethod.GET,
                 requestEntity,
                 new ParameterizedTypeReference<Result<Usuario>>() {
@@ -464,11 +470,12 @@ public class UsuarioController {
     }
 
     @PostMapping("/CargaMasiva")
-    public String CargaMasiva(@ModelAttribute MultipartFile archivo, Model model) throws IOException {
+    public String CargaMasiva(@ModelAttribute MultipartFile archivo, Model model,HttpSession session) throws IOException {
         try {
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);//Indicamos que el tipo de archivo a pasar es un multipart file
+            headers.setBearerAuth((String) session.getAttribute("token"));
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();//Para agrupar las partes del cuerpo de la petición
             // El archivo debe enviarse como un recurso
             body.add("archivo", archivo.getResource());//usamos getResource para que spring maneje correctamente el envio del archivo
@@ -504,13 +511,16 @@ public class UsuarioController {
     }
 
     @PostMapping("/CargaMasiva/Procesar")
-    public String ProcesarArchivo(@RequestParam("token") String token, Model model, RedirectAttributes redirectAttributes) throws JsonProcessingException {
+    public String ProcesarArchivo(@RequestParam("token") String token, Model model, RedirectAttributes redirectAttributes,HttpSession session) throws JsonProcessingException {
         RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String)session.getAttribute("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<>(header);
         String urlProcesar = url + "/usuarios/CargaMasiva/Procesar/" + token;
         try {
             ResponseEntity<Result> response = restTemplate.exchange(urlProcesar,
                     HttpMethod.POST,
-                    HttpEntity.EMPTY,
+                    requestEntity,
                     new ParameterizedTypeReference<Result>() {
             });
             Result result = response.getBody();
@@ -558,8 +568,8 @@ public class UsuarioController {
             Result result = response.getBody();
             model.addAttribute("Usuarios", result.Objects);
             model.addAttribute("usuariosEstatus", result.Objects);//recargar el usuario
-
             model.addAttribute("UsuarioAutenticado", session.getAttribute("UsuarioAutenticado"));
+
         } catch (Exception ex) {
             System.out.println(ex);
         }
@@ -569,7 +579,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/ImagenPerfil")
-    public String actualizarImagen(@ModelAttribute("Usuario") Usuario usuario, @ModelAttribute("imagenInput") MultipartFile imagenInput) throws IOException {
+    public String actualizarImagen(@ModelAttribute("Usuario") Usuario usuario, @ModelAttribute("imagenInput") MultipartFile imagenInput, HttpSession session) throws IOException {
         if (imagenInput != null) {
             long tamañoImagen = imagenInput.getSize();
             if (tamañoImagen > 0) {
@@ -579,9 +589,14 @@ public class UsuarioController {
                 }
             }
         }
-
+        HttpHeaders header = new HttpHeaders();
+        header.setBearerAuth((String)session.getAttribute("token"));
+//        HttpEntity<String> requestEntity = new HttpEntity<String>(header);
+        
+//        HttpEntity
+        
         RestTemplate restTemplate = new RestTemplate();
-        HttpEntity<Usuario> httpEntity = new HttpEntity<>(usuario);
+        HttpEntity<Usuario> httpEntity = new HttpEntity<>(usuario,header);
 
         ResponseEntity<Result> response = restTemplate.exchange(url + "/usuarios/Imagen/" + usuario.getIdUsuario(),
                 HttpMethod.POST,

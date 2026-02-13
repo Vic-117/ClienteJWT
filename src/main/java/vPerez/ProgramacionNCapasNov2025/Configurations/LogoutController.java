@@ -4,6 +4,7 @@
  */
 package vPerez.ProgramacionNCapasNov2025.Configurations;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -31,8 +32,18 @@ public class LogoutController {
 
         }
 
-        return "Logout";
+        //Eliminar cookie para que no se guarde ninguna pagina
+        Cookie cookie = new Cookie("JSESSIONID", null);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return "redirect:/logout/exit";
 
+    }
+    
+    @GetMapping("/exit")
+    public String salir(){
+        return "Logout";
     }
 
 }

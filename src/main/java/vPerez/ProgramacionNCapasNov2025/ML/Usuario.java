@@ -39,7 +39,7 @@ public class Usuario {
     @Pattern(regexp = "([A-Z|a-z|0-9](\\.|_){0,1})+[A-Z|a-z|0-9]\\@([A-Z|a-z|0-9])+((\\.){0,1}[A-Z|a-z|0-9]){2}\\.[a-z]{2,3}$",message = "Email no valido")
     private String email;
     @NotBlank
-    @Size(max = 49, min = 8)
+//    @Size(max = 49, min = 8)
     @Pattern(regexp = "^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$", message = "Contraseña Incorrecta")
     private String password;
 
